@@ -29,6 +29,7 @@ export async function connectDatabase(data) {
   // All stored counters fit safely within JavaScript's integer precision.
   pg.types.setTypeParser(20, Number);
   const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 5, idleTimeoutMillis: 10000 });
+  pool.on('error', error => console.error('Idle database connection closed:', error.code || error.name));
   const context = new AsyncLocalStorage();
   const bootstrap = await pool.connect();
   let booting = true;
