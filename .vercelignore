@@ -1,0 +1,9 @@
+data/
+artifacts/
+.env*
+.agents/
+.claude/
+.codex/
+.git/
+tests/
+skills-lock.json
