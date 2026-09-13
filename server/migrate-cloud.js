@@ -5,7 +5,7 @@ import path from 'node:path';
 import pg from 'pg';
 import { HeadObjectCommand } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
-import { storageReady, storageClient } from './cloud-storage.js';
+import { storageReady, storageClient, storageConfig } from './cloud-storage.js';
 
 if (!process.env.DATABASE_URL) throw new Error('Set DATABASE_URL before migrating.');
 const data = path.resolve(process.env.DATA_DIR || 'data');
@@ -33,7 +33,7 @@ try {
       if ((await client.query('SELECT id FROM clips WHERE id=$1', [clip.id])).rowCount) continue;
       const pathname = `clips/${clip.user_id}/${clip.id}/${clip.original_name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
       let blob;
-      const r2 = storageClient(); const params = { Bucket: process.env.R2_BUCKET, Key: pathname };
+      const r2 = storageClient(); const params = { Bucket: storageConfig().bucket, Key: pathname };
       try { blob = await r2.send(new HeadObjectCommand(params)); } catch (e) { if (e.$metadata?.httpStatusCode !== 404) throw e; }
       if (!blob) await new Upload({ client: r2, params: { ...params, Body: createReadStream(path.join(data, 'uploads', clip.filename)), ContentType: clip.mime } }).done();
       const meta = await r2.send(new HeadObjectCommand(params));
@@ -49,7 +49,7 @@ try {
     const keys = Object.keys(row);
     await client.query(`INSERT INTO events (${keys.join(',')}) VALUES (${keys.map((_, i) => `$${i + 1}`).join(',')}) ON CONFLICT (id) DO NOTHING`, Object.values(row));
   }
-  console.log(`Accounts and workspace migrated. ${imported} original clips migrated. ${storageReady() ? '' : 'Originals remain local until private R2 storage is connected.'}`);
+  console.log(`Accounts and workspace migrated. ${imported} original clips migrated. ${storageReady() ? '' : 'Originals remain local until private object storage is connected.'}`);
 } catch (error) {
   await client.query('ROLLBACK');
   throw error;

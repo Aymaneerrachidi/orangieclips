@@ -63,13 +63,25 @@ MP4, MOV, M4V, and WebM are accepted, up to 2 GB per clip. Uploaded bytes and th
 
 The app refreshes on window focus and every minute. Use the refresh button for an immediate update. Inline controls provide play/pause, mute, and seeking on desktop and touch devices. Hover playback is muted and pauses when leaving the card; reduced-motion preferences disable automatic playback. Use By date for calendar browsing or All clips for the complete permitted archive. Search and review-status filters apply to the active view. The split-screen review dialog keeps the video, original download, and feedback side by side on desktop.
 
-Accounts, sessions, metadata, workspace records, and audit events persist in `data/clips.sqlite`; original files are in `data/uploads/`. Back up the database and uploads together. Schema migration is additive and restart-safe. Local mode needs no external storage. Cloud mode uses Neon Postgres and a private Cloudflare R2 bucket. No email service is connected.
+Accounts, sessions, metadata, workspace records, and audit events persist in `data/clips.sqlite`; original files are in `data/uploads/`. Back up the database and uploads together. Schema migration is additive and restart-safe. Local mode needs no external storage. Cloud mode uses Neon Postgres and a private Backblaze B2 or Cloudflare R2 bucket. No email service is connected.
 
-## Vercel + Neon + Cloudflare R2
+## Vercel + Neon + Backblaze B2
 
-The frontend and API are deployed at https://orangieclips.vercel.app. Account data persists in Neon Postgres. Video storage requires an R2 bucket connection; without it, the app shows an explicit storage-unavailable message when an upload is attempted. The repository contains no accounts, passwords, database backups, or original clips.
+The frontend and API are deployed at https://orangieclips.vercel.app. Account data persists in Neon Postgres. Original videos are stored in a private Backblaze B2 bucket. Deployments without storage credentials show an explicit storage-unavailable message when an upload is attempted. The repository contains no accounts, passwords, database backups, or original clips.
 
-### Cloud configuration
+### Backblaze B2 (no-card storage option)
+
+The app supports a private Backblaze B2 bucket through its S3-compatible API. Create a bucket-scoped Read and Write application key, then set these server-only Vercel variables: `B2_ENDPOINT`, `B2_REGION`, `B2_BUCKET`, `B2_KEY_ID`, and `B2_APPLICATION_KEY`. B2 configuration takes priority over R2 when `B2_ENDPOINT` is present. No credentials belong in the frontend or repository.
+
+For the configured bucket, the endpoint is `https://s3.us-east-005.backblazeb2.com` and the region is `us-east-005`. Keep the bucket private. Configure CORS for the production origin and S3 GET, HEAD, and PUT operations. [Backblaze CORS documentation](https://www.backblaze.com/docs/cloud-storage-cross-origin-resource-sharing-rules).
+
+Migration uses the same script:
+
+```sh
+node --env-file=.env.cloud --env-file=.env.b2 server/migrate-cloud.js
+```
+
+### Alternative: Cloudflare R2 configuration
 
 Connect a Neon Postgres database to the Vercel project and set these server-only environment variables:
 
@@ -94,19 +106,19 @@ Vercel automatically enables Secure session cookies. It never writes accounts or
 
 ### How originals travel
 
-The server authorizes an upload and issues one-hour, object-scoped URLs for 16 MB parts. The browser uploads directly to R2, three parts at a time, with progress and retries. Completion verifies the actual part sizes and original size before adding one clip and one activity event. Repeated completion requests do not double-count clips. Canceled uploads are aborted; R2's incomplete-multipart lifecycle handles abandoned browser sessions.
+The server authorizes an upload and issues one-hour, object-scoped URLs for 16 MB parts. The browser uploads directly to private object storage, three parts at a time, with progress and retries. Completion verifies the actual part sizes and original size before adding one clip and one activity event. Repeated completion requests do not double-count clips. Canceled uploads are aborted; configure an incomplete-multipart lifecycle rule in the storage provider to clean up abandoned browser sessions.
 
-Every preview/download request checks the signed-in user's role and clip ownership before issuing a 15-minute read URL for that object. Video byte ranges and downloads go directly to R2. Signed read links remain usable until expiry, including after a session is revoked. Filenames and original bytes are preserved; no transcoding or social-view tracking is performed.
+Every preview/download request checks the signed-in user's role and clip ownership before issuing a 15-minute read URL for that object. Video byte ranges and downloads go directly to private object storage. Signed read links remain usable until expiry, including after a session is revoked. Filenames and original bytes are preserved; no transcoding or social-view tracking is performed.
 
 ### Migrating existing local data
 
-Keep database and R2 credentials in ignored local environment files, then run:
+Keep database and storage credentials in ignored local environment files, then run:
 
 ```sh
 node --env-file=.env.cloud --env-file=.env.r2 server/migrate-cloud.js
 ```
 
-The migration backs up SQLite first, copies accounts and the workspace, uploads originals to the private bucket, verifies file sizes, and copies clip metadata and associated activity. It is repeatable by record ID and never overwrites existing cloud accounts. Password hashes are preserved; sessions are not copied. Running with only `.env.cloud` migrates accounts, leaving originals local until R2 is connected.
+The migration backs up SQLite first, copies accounts and the workspace, uploads originals to the private bucket, verifies file sizes, and copies clip metadata and associated activity. It is repeatable by record ID and never overwrites existing cloud accounts. Password hashes are preserved; sessions are not copied. Running with only `.env.cloud` migrates accounts, leaving originals local until object storage is connected.
 
 ### Local server options
 
@@ -133,4 +145,4 @@ API tests cover automatic provisioning, existing-data migration, duplicate-free 
 
 Browser tests use locally installed Chrome (`BROWSER_CHANNEL` can override), disposable databases/accounts, and a generated test video. They cover all three roles, uploads, date hovering, playback, downloads, review feedback, role management, daily statistics, CSV export, accessibility, and mobile overflow. Screenshots in `artifacts/` contain test fixtures, not production data. Tests never modify the workspace database.
 
-Cloud upload tests use a simulated object store to verify ownership, size validation, and duplicate-free completion. Real R2 transfers require configured credentials and CORS.
+Cloud upload tests use a simulated object store to verify ownership, size validation, and duplicate-free completion. Real object-storage transfers require configured credentials and CORS.

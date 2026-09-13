@@ -4,9 +4,20 @@ import { S3Client, CreateMultipartUploadCommand, UploadPartCommand, ListPartsCom
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { validDay } from './analytics.js';
 
-export const storageReady = () => ['R2_ENDPOINT', 'R2_BUCKET', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY'].every(key => Boolean(process.env[key]));
+export function storageConfig() {
+  const b2 = Boolean(process.env.B2_ENDPOINT);
+  return b2 ? {
+    endpoint: process.env.B2_ENDPOINT, region: process.env.B2_REGION || 'us-east-005',
+    bucket: process.env.B2_BUCKET, accessKeyId: process.env.B2_KEY_ID, secretAccessKey: process.env.B2_APPLICATION_KEY,
+  } : {
+    endpoint: process.env.R2_ENDPOINT, region: 'auto', bucket: process.env.R2_BUCKET,
+    accessKeyId: process.env.R2_ACCESS_KEY_ID, secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+  };
+}
+export const storageReady = () => Object.values(storageConfig()).every(Boolean);
 export function storageClient() {
-  return new S3Client({ region: 'auto', endpoint: process.env.R2_ENDPOINT, credentials: { accessKeyId: process.env.R2_ACCESS_KEY_ID, secretAccessKey: process.env.R2_SECRET_ACCESS_KEY }, requestChecksumCalculation: 'WHEN_REQUIRED', responseChecksumValidation: 'WHEN_REQUIRED' });
+  const { endpoint, region, accessKeyId, secretAccessKey } = storageConfig();
+  return new S3Client({ region, endpoint, credentials: { accessKeyId, secretAccessKey }, requestChecksumCalculation: 'WHEN_REQUIRED', responseChecksumValidation: 'WHEN_REQUIRED' });
 }
 const MAX_SIZE = 2 * 1024 ** 3;
 const PART_SIZE = 16 * 1024 ** 2;
@@ -25,7 +36,7 @@ export async function setupCloudStorage(app, db, auth, storage = { ready: storag
     const original = path.basename(name.replaceAll('\\', '/'));
     const pathname = `clips/${req.user.id}/${id}/${original}`;
     const client = storage.client();
-    const params = { Bucket: process.env.R2_BUCKET, Key: pathname };
+    const params = { Bucket: storageConfig().bucket, Key: pathname };
     const multipart = await client.send(new CreateMultipartUploadCommand({ ...params, ContentType: mimeFor(original) }));
     try {
       await db.prepare('INSERT INTO cloud_uploads VALUES (?,?,?,?,?,?,?,?,?)').run(id, req.user.id, title.trim(), day, original, pathname, Date.now() + 24 * 3600000, size, multipart.UploadId);
@@ -39,7 +50,7 @@ export async function setupCloudStorage(app, db, auth, storage = { ready: storag
     if (!pending) return res.status(404).json({ error: 'Upload not found.' });
     if (pending.expires < Date.now()) return res.status(410).json({ error: 'Upload expired. Please try again.' });
     const client = storage.client();
-    const params = { Bucket: process.env.R2_BUCKET, Key: pending.pathname };
+    const params = { Bucket: storageConfig().bucket, Key: pending.pathname };
     let blob;
     try { blob = await client.send(new HeadObjectCommand(params)); } catch (e) { if (e.$metadata?.httpStatusCode !== 404) throw e; }
     if (!blob) {
@@ -59,7 +70,7 @@ export async function setupCloudStorage(app, db, auth, storage = { ready: storag
     if (!db.cloud || !storage.ready()) return unavailable(res);
     const pending = await ownUpload(req.params.id, req.user);
     if (!pending) return res.status(404).json({ error: 'Upload not found.' });
-    try { await storage.client().send(new AbortMultipartUploadCommand({ Bucket: process.env.R2_BUCKET, Key: pending.pathname, UploadId: pending.upload_id })); } catch (e) { if (e.name !== 'NoSuchUpload') throw e; }
+    try { await storage.client().send(new AbortMultipartUploadCommand({ Bucket: storageConfig().bucket, Key: pending.pathname, UploadId: pending.upload_id })); } catch (e) { if (e.name !== 'NoSuchUpload') throw e; }
     res.json({ ok: true });
   });
 }
@@ -67,8 +78,8 @@ export async function setupCloudStorage(app, db, auth, storage = { ready: storag
 export async function serveCloudClip(req, res, clip) {
   if (!storageReady()) return unavailable(res);
   const filename = encodeURIComponent(clip.original_name).replace(/['()*]/g, c => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
-  const url = await getSignedUrl(storageClient(), new GetObjectCommand({ Bucket: process.env.R2_BUCKET, Key: clip.filename, ResponseContentType: req.params.action === 'download' ? 'application/octet-stream' : clip.mime, ResponseContentDisposition: `${req.params.action === 'download' ? 'attachment' : 'inline'}; filename*=UTF-8''${filename}` }), { expiresIn: 900 });
+  const url = await getSignedUrl(storageClient(), new GetObjectCommand({ Bucket: storageConfig().bucket, Key: clip.filename, ResponseContentType: req.params.action === 'download' ? 'application/octet-stream' : clip.mime, ResponseContentDisposition: `${req.params.action === 'download' ? 'attachment' : 'inline'}; filename*=UTF-8''${filename}` }), { expiresIn: 900 });
   // The server checks role access before issuing a 15-minute read URL for one object.
-  // Playback ranges and original downloads travel directly from R2 to the browser.
+  // Playback ranges and original downloads travel directly from private storage to the browser.
   res.redirect(307, url);
 }
