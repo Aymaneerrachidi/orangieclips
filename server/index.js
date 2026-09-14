@@ -20,11 +20,13 @@ CREATE TABLE IF NOT EXISTS clips (id TEXT PRIMARY KEY, title TEXT NOT NULL, day 
 // Additive migration keeps existing accounts and original files intact.
 await db.exec('BEGIN IMMEDIATE');
 try {
+  if (db.cloud) await db.exec('SELECT pg_advisory_xact_lock(7149201)');
   const userColumns = (await db.prepare(db.cloud ? "SELECT column_name AS name FROM information_schema.columns WHERE table_name='users'" : 'PRAGMA table_info(users)').all()).map(c => c.name);
   if (!userColumns.includes('active')) await db.exec('ALTER TABLE users ADD COLUMN active INTEGER NOT NULL DEFAULT 1');
   if (!userColumns.includes('created_at')) await db.exec("ALTER TABLE users ADD COLUMN created_at TEXT NOT NULL DEFAULT ''");
   const clipColumns = (await db.prepare(db.cloud ? "SELECT column_name AS name FROM information_schema.columns WHERE table_name='clips'" : 'PRAGMA table_info(clips)').all()).map(c => c.name);
   if (!clipColumns.includes('status')) await db.exec("ALTER TABLE clips ADD COLUMN status TEXT NOT NULL DEFAULT 'pending'");
+  if (!clipColumns.includes('posting_tag')) await db.exec("ALTER TABLE clips ADD COLUMN posting_tag TEXT NOT NULL DEFAULT ''");
   if (!clipColumns.includes('review_note')) await db.exec("ALTER TABLE clips ADD COLUMN review_note TEXT NOT NULL DEFAULT ''");
   await db.exec(`CREATE TABLE IF NOT EXISTS workspace (id TEXT PRIMARY KEY, name TEXT NOT NULL, owner_id TEXT NOT NULL REFERENCES users(id), created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS events (id TEXT PRIMARY KEY, actor_id TEXT REFERENCES users(id), subject_id TEXT REFERENCES users(id), clip_id TEXT REFERENCES clips(id), action TEXT NOT NULL, detail TEXT NOT NULL, created_at TEXT NOT NULL);
@@ -51,7 +53,7 @@ await db.exec("INSERT OR IGNORE INTO events SELECT 'upload:' || id,user_id,user_
 const workspace = await db.prepare('SELECT * FROM workspace WHERE id=?').get('orangie');
 async function record(actor, subject, clip, action, detail) { await db.prepare('INSERT INTO events VALUES (?,?,?,?,?,?,?)').run(randomUUID(), actor, subject, clip, action, detail, new Date().toISOString()); }
 async function visibleClips(user) {
-  return await db.prepare(`SELECT c.id,c.title,c.day,c.original_name,c.mime,c.size,c.user_id,c.created_at,c.status,c.review_note,u.name AS creator FROM clips c JOIN users u ON u.id=c.user_id ${permissionsFor(user.role).allClips ? '' : 'WHERE c.user_id=?'} ORDER BY c.created_at DESC`).all(...(permissionsFor(user.role).allClips ? [] : [user.id]));
+  return await db.prepare(`SELECT c.id,c.title,c.day,c.original_name,c.mime,c.size,c.user_id,c.created_at,c.status,c.review_note,c.posting_tag,u.name AS creator FROM clips c JOIN users u ON u.id=c.user_id ${permissionsFor(user.role).allClips ? '' : 'WHERE c.user_id=?'} ORDER BY c.created_at DESC`).all(...(permissionsFor(user.role).allClips ? [] : [user.id]));
 }
 db.ready?.();
 const app = express();
@@ -170,13 +172,16 @@ app.patch('/api/clips/:id', auth, async (req, res) => {
   const clip = await db.prepare('SELECT * FROM clips WHERE id=?').get(req.params.id);
   if (!clip || !canReadClip(req.user, clip)) return res.status(404).json({ error: 'Clip not found.' });
   if (!permissionsFor(req.user.role).reviewClips) return res.status(403).json({ error: 'Only Orangie and Team members can review clips.' });
-  const { status, review_note = '' } = req.body;
+  const { status = clip.status, review_note = clip.review_note, posting_tag = clip.posting_tag } = req.body;
+  if (!['', 'personal', 'clip_page'].includes(posting_tag)) return res.status(400).json({ error: 'Choose a valid posting tag.' });
+  if (status === 'not_posting' && posting_tag) return res.status(400).json({ error: 'Clear the posting tag when choosing Not posting.' });
   if (!STATUSES.includes(status) || typeof review_note !== 'string' || review_note.length > 1000) return res.status(400).json({ error: 'Choose a valid status and keep notes under 1,000 characters.' });
   if (status === 'changes' && !review_note.trim()) return res.status(400).json({ error: 'Add a note so the clipper knows what to change.' });
+  if (status === 'not_posting' && !review_note.trim()) return res.status(400).json({ error: 'Add a note explaining why this clip will not be posted.' });
   await db.exec('BEGIN IMMEDIATE');
   try {
-    await db.prepare('UPDATE clips SET status=?,review_note=? WHERE id=?').run(status, review_note.trim(), clip.id);
-    await record(req.user.id, clip.user_id, clip.id, 'clip.reviewed', `${clip.title}: ${status}`);
+    await db.prepare('UPDATE clips SET status=?,review_note=?,posting_tag=? WHERE id=?').run(status, review_note.trim(), posting_tag, clip.id);
+    await record(req.user.id, clip.user_id, clip.id, 'clip.reviewed', `${clip.title}: ${status}${posting_tag ? `, ${posting_tag === 'personal' ? "Ima post" : "Post on Orangie clip page"}` : ""}${review_note.trim() ? ` - ${review_note.trim()}` : ""}`);
     await db.exec('COMMIT');
   } catch(e) { await db.exec('ROLLBACK'); throw e; }
   res.json({ ok: true });

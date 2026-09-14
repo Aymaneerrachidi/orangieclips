@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowDownToLine, ArrowUpRight, Film, Pause, Play, Volume2, VolumeX } from 'lucide-react';
 import { Status } from './components';
-import { bytes } from './lib';
+import { bytes, postingLabels } from './lib';
 
 const clock = n => `${Math.floor(n / 60)}:${String(Math.floor(n % 60)).padStart(2, '0')}`;
 
@@ -16,8 +16,12 @@ export default function ClipCard({ clip, open }) {
   const stop = () => { active.current = false; video.current?.pause(); setMuted(true); };
   useEffect(() => {
     const hide = () => { if (document.hidden) stop(); };
+    // A click can replace the play icon before the browser emits pointerleave.
+    const leave = e => { if (active.current && e.pointerType === 'mouse' && !video.current?.closest('.media-stage')?.contains(e.target)) stop(); };
+    document.addEventListener('pointermove', leave, { passive: true });
     document.addEventListener('visibilitychange', hide);
-    return () => document.removeEventListener('visibilitychange', hide);
+    window.addEventListener('blur', stop);
+    return () => { document.removeEventListener('pointermove', leave); document.removeEventListener('visibilitychange', hide); window.removeEventListener('blur', stop); };
   }, []);
   async function play() {
     active.current = true;
@@ -28,10 +32,11 @@ export default function ClipCard({ clip, open }) {
   }
   function watch() { stop(); open(clip); }
   return <article className={`media-card ${playing ? 'is-playing' : ''}`}>
-    <div className="media-stage" onMouseEnter={hover} onMouseLeave={stop} onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) stop(); }}>
+    <div className="media-stage" onPointerEnter={e => { if (e.pointerType === 'mouse') hover(); }} onPointerLeave={e => { if (e.pointerType === 'mouse') stop(); }} onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) stop(); }}>
       <button className="media-preview" onClick={watch} aria-label={`Preview ${clip.title}`}>
         {failed ? <div className="media-fallback"><Film size={38}/><span>Download to play this format</span></div> :
           <video ref={video} preload="metadata" muted={muted} loop playsInline src={`/api/clips/${clip.id}/preview#t=0.1`}
+            onCanPlay={() => { if (active.current && video.current?.paused) play(); }}
             onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onError={() => setFailed(true)}
             onLoadedMetadata={e => { if (Number.isFinite(e.currentTarget.duration)) setDuration(e.currentTarget.duration); }}
             onTimeUpdate={e => setPosition(e.currentTarget.currentTime)}/>}
@@ -48,7 +53,9 @@ export default function ClipCard({ clip, open }) {
       </div>}
     </div>
     <div className="media-card-details"><div className="media-card-status"><Status status={clip.status}/><span>{bytes(clip.size)}</span></div>
+      {clip.posting_tag&&<span className="posting-tag">{postingLabels[clip.posting_tag]}</span>}
       <button className="media-title" onClick={watch}>{clip.title}</button>
+      {clip.review_note&&<button className="card-note" onClick={watch} aria-label={`Read note for ${clip.title}`}><strong>{clip.status==='not_posting'?'Why not posting: ':'Team note: '}</strong>{clip.review_note}</button>}
       <div className="media-card-footer"><span className="media-creator"><span className="avatar">{clip.creator[0]}</span>{clip.creator}</span>
         <a className="media-download" href={`/api/clips/${clip.id}/download`} download><ArrowDownToLine size={16}/><span>Download original</span></a>
       </div>

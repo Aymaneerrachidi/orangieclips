@@ -5,4 +5,4 @@ export const ROLES = {
 };
 export const permissionsFor = role => ROLES[role] || ROLES.clipper;
 export const canReadClip = (user, clip) => permissionsFor(user.role).allClips || clip.user_id === user.id;
-export const STATUSES = ['pending', 'approved', 'changes', 'posted'];
+export const STATUSES = ['pending', 'approved', 'changes', 'posted', 'not_posting'];

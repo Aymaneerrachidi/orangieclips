@@ -53,7 +53,9 @@ Permissions are checked server-side on metadata, statistics, activity, and the o
 - **All-time totals:** scoped to the workspace for Owner/Team and to the current user for Clippers.
 - **Contributor breakdown:** uploads, active dates, approved/posted totals, original bytes, and share of period uploads. Includes members with no uploads and preserves disabled members' contribution history.
 - **CSV exports:** daily statistics for every role's permitted scope; contributor export for Owner/Team. CSV fields are escaped and protected against formula injection.
-- **Statuses:** To review, Approved, Changes needed, Posted. Owner/Team can update statuses and add notes in the clip preview. Requesting changes requires a note. Clippers can see feedback on their own clips.
+- **Posting tags:** Orangie and Team can choose **Ima post** or **Post on Orangie clip page** in the clip player. Tags appear on cards and can be filtered in the library. They record intent only.
+- **Not posting:** requires a reason and clears the posting tag. Orangie and Team can edit the shared note, and the owning clipper can read it. Status, tag, and note changes appear in clip activity.
+- **Statuses:** To review, Approved, Changes needed, Posted, Not posting. Owner/Team can update statuses and add notes in the clip preview. Requesting changes requires a note. Clippers can see feedback on their own clips.
 - Stats are grouped by the **assigned calendar date**, not the actual upload timestamp. Activity retains the real timestamp. Approval/posted counts describe **current status**, not historical status at the end of a period. Posting is a manual status; it does not publish to social media.
 - No social views, playback events, or download counters are tracked.
 

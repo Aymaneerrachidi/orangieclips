@@ -1,7 +1,7 @@
 export const validDay = day => typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day) && Number.isFinite(Date.parse(day)) && new Date(day).toISOString().slice(0, 10) === day;
 export const shiftDay = (day, by) => new Date(Date.parse(day) + by * 86400000).toISOString().slice(0, 10);
 function summarize(clips) {
-  const statuses = { pending: 0, approved: 0, changes: 0, posted: 0 };
+  const statuses = { pending: 0, approved: 0, changes: 0, posted: 0, not_posting: 0 };
   for (const c of clips) statuses[c.status]++;
   return { clips: clips.length, bytes: clips.reduce((n, c) => n + c.size, 0), contributors: new Set(clips.map(c => c.user_id)).size, activeDays: new Set(clips.map(c => c.day)).size, ...statuses };
 }
