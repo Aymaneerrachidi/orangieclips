@@ -3,7 +3,7 @@ import { permissionsFor } from './permissions.js';
 
 export function setupMembers(app, db, { auth, credentials, hashPassword, record }) {
   const manager = (req,res,next) => permissionsFor(req.user.role).manageClippers ? next() : res.status(403).json({error:'Account management access is required.'});
-  const allowedRole = (actor, role) => (actor.role === 'owner' ? ['clipper','team','clipper_manager'] : ['clipper']).includes(role);
+  const allowedRole = (actor, role) => (permissionsFor(actor.role).manageMembers ? ['clipper','team','clipper_manager'] : ['clipper']).includes(role);
   app.get('/api/team', auth, async (req,res) => {
     const p=permissionsFor(req.user.role);
     if (!p.teamDirectory) return res.status(403).json({error:'Member directory access is required.'});
@@ -25,8 +25,8 @@ export function setupMembers(app, db, { auth, credentials, hashPassword, record 
     try {
       const member=await db.prepare(`SELECT * FROM users WHERE id=? AND deleted_at IS NULL${db.cloud?' FOR UPDATE':''}`).get(req.params.id);
       if (!member) {await db.exec('ROLLBACK');return res.status(404).json({error:'Member not found.'});}
-      if (member.role==='owner' || (req.user.role!=='owner' && member.role!=='clipper')) {
-        await db.exec('ROLLBACK');return res.status(req.user.role==='owner'?400:403).json({error:'You can only manage clipper accounts. Owner access is protected.'});
+      if (member.role==='owner' || (!permissionsFor(req.user.role).manageMembers && member.role!=='clipper')) {
+        await db.exec('ROLLBACK');return res.status(permissionsFor(req.user.role).manageMembers?400:403).json({error:'You can only manage clipper accounts. Owner access is protected.'});
       }
       await action(member);
       await db.prepare('DELETE FROM sessions WHERE user_id=?').run(member.id);

@@ -87,7 +87,6 @@ app.use('/api', async (req, res, next) => {
   next();
 });
 const auth = (req, res, next) => req.user ? next() : res.status(401).json({ error: 'Please sign in to continue.' });
-const owner = (req, res, next) => req.user?.role === 'owner' ? next() : res.status(403).json({ error: 'Only Orangie can manage the team.' });
 const staff = (req, res, next) => permissionsFor(req.user.role).teamStats ? next() : res.status(403).json({ error: 'Team access is required.' });
 function credentials(body) {
   const { name, email, password } = body;

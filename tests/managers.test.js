@@ -12,8 +12,9 @@ test('managers can manage clippers, preserve uploads on deletion, and cannot man
   const owner=await login('owner@example.com');const ids={};
   for(const [name,role] of [['Jake','clipper_manager'],['Rehan','clipper_manager'],['Bryan','team'],['Gyro','clipper']]){const r=await req('/team','POST',{name,email:`${name}@example.com`,password,role},owner);assert.equal(r.status,201);ids[name]=(await r.json()).id;}
   const jake=await login('jake@example.com');const gyro=await login('gyro@example.com');const bryan=await login('bryan@example.com');
+  const teamPermissions=(await (await req('/session','GET',undefined,bryan)).json()).user.permissions;const ownerPermissions=(await (await req('/session','GET',undefined,owner)).json()).user.permissions;assert.deepEqual({...teamPermissions,label:''},{...ownerPermissions,label:''});
   const ownerId=(await (await req('/session','GET',undefined,owner)).json()).user.id;
-  for(const cookie of [gyro,bryan])assert.equal((await req('/team','POST',{name:'Denied',email:'denied@example.com',password},cookie)).status,403);
+  for(const cookie of [gyro])assert.equal((await req('/team','POST',{name:'Denied',email:'denied@example.com',password},cookie)).status,403);
   for(const role of ['owner','team','clipper_manager'])assert.equal((await req('/team','POST',{name:'Denied',email:'denied@example.com',password,role},jake)).status,400);
   for(const id of [ownerId,ids.Jake,ids.Rehan,ids.Bryan])for(const [method,suffix,body] of [['PATCH','',{active:false}],['POST','/password',{password}],['DELETE','',undefined]])assert.equal((await req(`/team/${id}${suffix}`,method,body,jake)).status,403);
   assert.equal((await req(`/team/${ids.Gyro}`,'PATCH',{role:'team'},jake)).status,400);

@@ -204,8 +204,8 @@ test('role based workspace, clipper privacy, reviews, analytics, exports, hover 
     await page.getByRole('heading',{name:'The clip library',exact:true}).waitFor();
     await page.getByRole('button',{name:'The team',exact:true}).click();
     await page.getByRole('heading',{name:'Workspace members',exact:false}).waitFor();
-    assert.equal(await page.getByRole('button',{name:'Add member',exact:true}).count(),0);
-    assert.equal(await page.getByRole('button',{name:'Manage Sam',exact:true}).count(),0);
+    assert.equal(await page.getByRole('button',{name:'Add member',exact:true}).count(),1);
+    assert.equal(await page.getByRole('button',{name:'Manage Sam',exact:true}).count(),1);
     await page.getByRole('navigation').getByRole('button',{name:'Clip library',exact:false}).click();
     await page.getByRole('button',{name:'Today',exact:true}).click();
     await page.getByRole('button',{name:'The perfect moment',exact:true}).click();

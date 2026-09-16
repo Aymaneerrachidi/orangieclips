@@ -22,7 +22,7 @@ test('automatic workspace, role isolation, original downloads, daily analytics, 
     for (const [name,role] of [['Sam','clipper'],['Lee','clipper'],['Maya','team']]) { const r = await request('/team','POST',{name,email:`${name.toLowerCase()}@example.com`,password:'another-test-password',role},owner); assert.equal(r.status,201); ids[name]=(await r.json()).id; }
     const sam = await login('sam@example.com','another-test-password'); const lee = await login('lee@example.com','another-test-password'); const team = await login('maya@example.com','another-test-password');
     assert.equal((await request('/team','GET',undefined,sam)).status,403);
-    assert.equal((await request('/team','POST',{name:'Nope',email:'nope@example.com',password:'another-test-password'},team)).status,403);
+    assert.equal((await request('/team','POST',{name:'Nope',email:'nope@example.com',password:'another-test-password',role:'owner'},team)).status,400);
     assert.equal((await request('/team','POST',{name:'Nope',email:'nope@example.com',password:'another-test-password',role:'owner'},owner)).status,400);
     assert.equal((await request(`/team/${me.user.id}`,'PATCH',{active:false},owner)).status,400);
     const samClip = await upload(sam,'Sam original','2026-09-12');
@@ -65,7 +65,7 @@ test('automatic workspace, role isolation, original downloads, daily analytics, 
     const declinedStats = await (await request('/analytics?from=2026-09-10&to=2026-09-12','GET',undefined,sam)).json();
     assert.equal(declinedStats.totals.not_posting,1); assert.equal(declinedStats.daily.find(d=>d.day==='2026-09-12').not_posting,1);
     const ownActivity = await (await request('/activity','GET',undefined,sam)).json(); assert.ok(ownActivity.every(e => e.subject_id === ids.Sam && e.action.startsWith('clip.')));
-    const teamActivity = await (await request('/activity','GET',undefined,team)).json(); assert.ok(teamActivity.every(e => e.action.startsWith('clip.')));
+    const teamActivity = await (await request('/activity','GET',undefined,team)).json(); assert.ok(teamActivity.some(e => e.action === 'member.created'));
     const ownerActivity = await (await request('/activity','GET',undefined,owner)).json(); assert.ok(ownerActivity.some(e => e.action === 'member.created'));
     const before = ownerActivity.length; await server.restart();
     assert.equal((await (await request('/activity','GET',undefined,owner)).json()).length,before,'Restart must not duplicate historical uploads');

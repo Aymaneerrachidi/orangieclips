@@ -37,15 +37,15 @@ On a fresh database, startup creates **Orangie's workspace**, **Orangie's Owner 
 | Calendar counts and library totals | Workspace | Workspace | Own only |
 | Daily stats and CSV exports | Workspace + contributors | Workspace + contributors | Own only |
 | Review clips and leave feedback | Yes | Yes | Read own feedback |
-| See member directory | Yes, including emails | Names, roles, access | No |
-| Add members, change roles, disable access | Yes | No | No |
-| Reset another member's password | Yes | No | No |
+| See member directory | Yes, including emails | Yes, including emails | No |
+| Add members, change roles, disable access | Yes | Yes | No |
+| Reset another member's password | Yes | Yes | No |
 | Change own password | Yes | Yes | Yes |
-| Activity history | Uploads, reviews, account audit | All clip activity | Own clip activity |
+| Activity history | Uploads, reviews, account audit | Uploads, reviews, account audit | Own clip activity |
 
 Permissions are checked server-side on metadata, statistics, activity, and the original-file routes. A clipper cannot access another clipper's file by copying its URL. The single owner cannot be demoted or disabled through account management. Role/access changes, disabling accounts, and password resets revoke that member's sessions. Password changes revoke other sessions and issue a fresh session to the current browser. Sessions last seven days.
 
-Clipper Managers can add clippers, edit their names and emails, reset passwords, enable or disable sign-in, and delete clipper accounts. Their directory contains only clippers. They cannot create staff, promote accounts, or manage Orangie, Team, or other managers. Their clip library, statistics, and activity remain personal, like a clipper's. Only Orangie assigns the Clipper Manager role.
+Clipper Managers can add clippers, edit their names and emails, reset passwords, enable or disable sign-in, and delete clipper accounts. Their directory contains only clippers. They cannot create staff, promote accounts, or manage Orangie, Team, or other managers. Their clip library, statistics, and activity remain personal, like a clipper's. Orangie and Team assign staff roles. Team has the same permissions as Owner; the original Owner account remains protected for everyone.
 
 Deleting a clipper removes the account from the directory and revokes sign-in and sessions. Uploaded clips and contribution history remain available to Owner and Team. The deleted email remains reserved for audit continuity.
 
