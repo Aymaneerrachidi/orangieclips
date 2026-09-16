@@ -3,7 +3,7 @@ export const dateOf = day => new Date(`${day}T12:00:00`);
 export const shiftDay = (day, amount) => { const d = dateOf(day); d.setDate(d.getDate() + amount); return localDay(d); };
 export const formatDate = (day, options = { month: 'short', day: 'numeric' }) => dateOf(day).toLocaleDateString('en-US', options);
 export const bytes = n => !n ? '0 MB' : n >= 1024 ** 3 ? `${(n / 1024 ** 3).toFixed(2)} GB` : n >= 1024 ** 2 ? `${(n / 1024 ** 2).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`;
-export const roleLabels = { owner: 'Owner', team: 'Team', clipper: 'Clipper' };
+export const roleLabels = { owner: 'Owner', team: 'Team', clipper_manager: 'Clipper Manager', clipper: 'Clipper' };
 export const statusLabels = { pending: 'To review', approved: 'Approved', changes: 'Changes needed', posted: 'Posted', not_posting: 'Not posting' };
 export async function api(url, options = {}) {
   const res = await fetch(`/api${url}`, { ...options, headers: { 'Content-Type': 'application/json', ...options.headers } });

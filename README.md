@@ -20,13 +20,13 @@ Open http://127.0.0.1:3001. Development: `npm run dev`, then http://localhost:51
 
 ### Automatic workspace and owner
 
-On a fresh database, startup creates **Orangie's workspace**, **Orangie's Owner account**, and the Owner / Team / Clipper permission definitions. There is no public workspace setup form and no shared default password.
+On a fresh database, startup creates **Orangie's workspace**, **Orangie's Owner account**, and the Owner / Team / Clipper Manager / Clipper permission definitions. There is no public workspace setup form and no shared default password.
 
 - Set `OWNER_EMAIL` and `OWNER_PASSWORD` before first startup to supply initial owner credentials. Passwords must contain 12-200 characters.
 - If no password is supplied, startup generates a random password and writes it to `data/owner-access.txt` (or your `DATA_DIR`). The default initial email is `orangie@cliproom.local`. This file is excluded from Git and is never served by the app.
 - Change the initial password through **Your account** after signing in. The initial credentials file is not updated by later password changes.
 - On an existing installation, the existing owner, accounts, sessions, and clips are preserved. Bootstrap environment variables do not overwrite existing credentials. Existing clips begin with **To review** status.
-- Orangie adds real people through **The team → Add member**, choosing Team or Clipper. No fake members or shared team accounts are created.
+- Orangie adds real people through **The team → Add member**, choosing Team, Clipper Manager, or Clipper. No fake members or shared team accounts are created.
 
 ## Role permissions
 
@@ -44,6 +44,10 @@ On a fresh database, startup creates **Orangie's workspace**, **Orangie's Owner 
 | Activity history | Uploads, reviews, account audit | All clip activity | Own clip activity |
 
 Permissions are checked server-side on metadata, statistics, activity, and the original-file routes. A clipper cannot access another clipper's file by copying its URL. The single owner cannot be demoted or disabled through account management. Role/access changes, disabling accounts, and password resets revoke that member's sessions. Password changes revoke other sessions and issue a fresh session to the current browser. Sessions last seven days.
+
+Clipper Managers can add clippers, edit their names and emails, reset passwords, enable or disable sign-in, and delete clipper accounts. Their directory contains only clippers. They cannot create staff, promote accounts, or manage Orangie, Team, or other managers. Their clip library, statistics, and activity remain personal, like a clipper's. Only Orangie assigns the Clipper Manager role.
+
+Deleting a clipper removes the account from the directory and revokes sign-in and sessions. Uploaded clips and contribution history remain available to Owner and Team. The deleted email remains reserved for audit continuity.
 
 ## Analytics and review workflow
 

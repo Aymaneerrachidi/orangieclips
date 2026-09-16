@@ -1,3 +1,4 @@
+import { setupMembers } from './members.js';
 import express from 'express';
 import multer from 'multer';
 import { setupCloudStorage, serveCloudClip } from './cloud-storage.js';
@@ -22,6 +23,7 @@ await db.exec('BEGIN IMMEDIATE');
 try {
   if (db.cloud) await db.exec('SELECT pg_advisory_xact_lock(7149201)');
   const userColumns = (await db.prepare(db.cloud ? "SELECT column_name AS name FROM information_schema.columns WHERE table_name='users'" : 'PRAGMA table_info(users)').all()).map(c => c.name);
+  if (!userColumns.includes('deleted_at')) await db.exec('ALTER TABLE users ADD COLUMN deleted_at TEXT');
   if (!userColumns.includes('active')) await db.exec('ALTER TABLE users ADD COLUMN active INTEGER NOT NULL DEFAULT 1');
   if (!userColumns.includes('created_at')) await db.exec("ALTER TABLE users ADD COLUMN created_at TEXT NOT NULL DEFAULT ''");
   const clipColumns = (await db.prepare(db.cloud ? "SELECT column_name AS name FROM information_schema.columns WHERE table_name='clips'" : 'PRAGMA table_info(clips)').all()).map(c => c.name);
@@ -111,41 +113,8 @@ app.post('/api/logout', auth, async (req, res) => {
   if (token) await db.prepare('DELETE FROM sessions WHERE token=?').run(digest(token));
   res.setHeader('Set-Cookie', 'session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'); res.json({ ok: true });
 });
-app.get('/api/team', auth, staff, async (req, res) => res.json(await db.prepare(`SELECT id,name,role,active,created_at${req.user.role === 'owner' ? ',email' : ''} FROM users ORDER BY CASE role WHEN 'owner' THEN 0 WHEN 'team' THEN 1 ELSE 2 END,name`).all()));
-app.get('/api/roles', auth, async (req, res) => res.json(ROLES));
-app.post('/api/team', auth, owner, async (req, res) => {
-  try {
-    const c = credentials(req.body); const role = req.body.role || 'clipper';
-    if (!['team', 'clipper'].includes(role)) return res.status(400).json({ error: 'Choose Team or Clipper. Orangie remains the owner.' });
-    const id = randomUUID(); await db.prepare('INSERT INTO users (id,name,email,password,role,created_at) VALUES (?, ?, ?, ?, ?, ?)').run(id, c.name, c.email, hashPassword(c.password), role, new Date().toISOString());
-    await record(req.user.id, id, null, 'member.created', `${c.name} joined as ${role}`); res.status(201).json({ id });
-  }
-  catch (e) { res.status(400).json({ error: (e.message.includes('UNIQUE') || e.code === '23505') ? 'That email already has an account.' : e.message }); }
-});
-app.patch('/api/team/:id', auth, owner, async (req, res) => {
-  const member = await db.prepare('SELECT * FROM users WHERE id=?').get(req.params.id);
-  if (!member) return res.status(404).json({ error: 'Member not found.' });
-  if (member.role === 'owner') return res.status(400).json({ error: 'The owner role and owner access cannot be changed.' });
-  const role = req.body.role ?? member.role; const active = req.body.active ?? Boolean(member.active);
-  if (!['team','clipper'].includes(role) || typeof active !== 'boolean') return res.status(400).json({ error: 'Choose a valid role and account status.' });
-  await db.exec('BEGIN IMMEDIATE');
-  try {
-    await db.prepare('UPDATE users SET role=?,active=? WHERE id=?').run(role, Number(active), member.id);
-    await db.prepare('DELETE FROM sessions WHERE user_id=?').run(member.id);
-    await record(req.user.id, member.id, null, 'member.updated', `${member.name}: ${role}, ${active ? 'active' : 'disabled'}`);
-    await db.exec('COMMIT');
-  } catch(e) { await db.exec('ROLLBACK'); throw e; }
-  res.json({ ok: true });
-});
-app.post('/api/team/:id/password', auth, owner, async (req, res) => {
-  const member = await db.prepare('SELECT * FROM users WHERE id=?').get(req.params.id);
-  if (!member || member.role === 'owner') return res.status(400).json({ error: 'Use Account to change your own password.' });
-  try { credentials({ ...member, password: req.body.password }); } catch(e) { return res.status(400).json({ error: e.message }); }
-  await db.prepare('UPDATE users SET password=? WHERE id=?').run(hashPassword(req.body.password), member.id);
-  await db.prepare('DELETE FROM sessions WHERE user_id=?').run(member.id);
-  await record(req.user.id, member.id, null, 'member.password_reset', `${member.name}'s password was reset`);
-  res.json({ ok: true });
-});
+setupMembers(app, db, { auth, credentials, hashPassword, record });
+app.get('/api/roles', auth, (req,res) => res.json(ROLES));
 app.post('/api/account/password', auth, async (req, res) => {
   const { currentPassword, password } = req.body;
   if (typeof currentPassword !== 'string' || currentPassword.length > 200 || !checkPassword(currentPassword, req.user.password)) return res.status(400).json({ error: 'Your current password is incorrect.' });
