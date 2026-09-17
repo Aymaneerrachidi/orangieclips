@@ -6,10 +6,15 @@ import { statusLabels } from './lib';
 gsap.registerPlugin(useGSAP);
 export function Brand() { return <div className="brand"><span className="brand-icon"><Clapperboard size={23}/></span><span>orangie<span className="brand-dot">.</span><small>CLIP ROOM</small></span></div>; }
 export function Status({ status }) { return <span className={`status status-${status}`}>{statusLabels[status] || status}</span>; }
-export function Modal({ title, children, close, wide = false }) {
+export function Modal({ title, children, close, wide = false, dismissOnBackdrop = true }) {
   const ref = useRef();
+  const backdropPress = useRef(false);
   useEffect(() => { const dialog = ref.current; const previous = document.activeElement; dialog.showModal(); return () => { dialog.close(); previous?.focus?.(); }; }, []);
-  return <dialog ref={ref} aria-label={title} className={`modal ${wide ? 'wide' : ''}`} onCancel={e => { e.preventDefault(); close(); }} onClick={e => { if (e.target === ref.current) close(); }}><div className="modal-inner"><div className="modal-heading"><h2>{title}</h2><button className="icon-button" onClick={close} aria-label="Close dialog"><X size={20}/></button></div>{children}</div></dialog>;
+  function outside(e) {
+    const bounds = ref.current.getBoundingClientRect();
+    return e.target === ref.current && (e.clientX < bounds.left || e.clientX > bounds.right || e.clientY < bounds.top || e.clientY > bounds.bottom);
+  }
+  return <dialog ref={ref} aria-label={title} className={`modal ${wide ? 'wide' : ''}`} onCancel={e => { e.preventDefault(); close(); }} onPointerDown={e => { backdropPress.current = outside(e); }} onPointerCancel={() => { backdropPress.current = false; }} onClick={e => { const dismiss = dismissOnBackdrop && backdropPress.current && outside(e); backdropPress.current = false; if (dismiss) close(); }}><div className="modal-inner"><div className="modal-heading"><h2>{title}</h2><button type="button" className="icon-button" onClick={close} aria-label="Close dialog"><X size={20}/></button></div>{children}</div></dialog>;
 }
 export function PageTransition({ children, page }) {
   const ref = useRef();

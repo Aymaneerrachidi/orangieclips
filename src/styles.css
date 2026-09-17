@@ -15,3 +15,124 @@
 .posting-tag{display:inline-flex;max-width:100%;background:#36271e;color:#f6bc93;border:1px solid #69513e;padding:6px 9px;border-radius:5px;font-size:11px;line-height:1.5;margin:0 0 12px}.status-not_posting{background:#382a30;color:#f3b0bd}.status-indicator.not_posting{background:#f3b0bd}.card-note{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-align:left;width:100%;border:0;background:transparent;color:#b9bec6;font-size:12px;line-height:1.65;padding:0;margin-top:12px;cursor:pointer;overflow-wrap:anywhere}.card-note strong{font-weight:500;color:#eeeef0}.note-help{font-weight:400;font-size:11px;color:#a1a6af;line-height:1.65}.review-fields{grid-template-columns:1fr}.clip-feedback p{white-space:pre-wrap;overflow-wrap:anywhere}
 
 .remove-member{border-top:1px solid #4b3a3e;margin-top:24px;padding-top:18px}.remove-member p{font-size:12px;line-height:1.7;color:#c9c1c3}.remove-member>button{margin-right:14px;margin-top:8px}.remove-member>.text-button{color:#f3b0bd}.role-badge.clipper_manager{color:#c9b8f6;background:#30273e}.role-choice{flex-wrap:wrap}
+
+/* Phone controls stay readable when the keyboard or browser chrome is open. */
+.modal{overscroll-behavior:contain;scroll-padding:20px}
+.modal-heading>.icon-button{flex-shrink:0}
+@media(max-width:760px),(pointer:coarse){
+  .button,.text-button,.manage-button,.media-download,.account-trigger,.rail-heading>button{min-height:44px}
+  .icon-button,.studio-account .icon-button,.month-title .icon-button,.subtle-upload,.inline-controls button{min-width:44px;width:44px;height:44px}
+  .studio-header nav>button,.segmented button{min-height:44px}
+  .account-form input:not([type=checkbox]):not([type=radio]):not([type=file]),.account-form select,.review-fields textarea,.review-fields select,.search input,.media-toolbar .search input,.member-filters .search input,.status-filter select,.member-filters select,.activity-panel .section-heading select,.range-inputs input{font-size:16px;min-height:48px}
+  .check-row{min-height:44px}
+  .inline-controls input{height:44px}
+  .month-jump{position:relative;display:grid;place-items:center;width:44px;height:44px;flex-shrink:0}
+  .month-jump input{width:44px;height:44px}
+  .month-jump input::-webkit-calendar-picker-indicator{width:20px;height:20px;padding:12px;margin:0}
+  .date-tile{min-height:44px;font-size:13px}
+  .media-card:hover{transform:none}
+  .media-preview:hover video{transform:none}
+  .media-card:not(.is-playing) .media-play{opacity:1;transform:none}
+  .modal{max-height:calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
+  .modal-inner{padding-bottom:max(24px,env(safe-area-inset-bottom));}
+}
+@media(max-width:760px){
+  .studio-header{padding-top:max(16px,env(safe-area-inset-top));padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));gap:12px 8px}
+  .studio-header nav>button{font-size:12px;padding:12px 6px;min-width:0}
+  .studio-account{gap:2px}
+  .studio-account .refresh-button{display:inline-flex}
+  .account-trigger{padding:4px;gap:5px}
+  .main-shell{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+  .app-footer{padding-bottom:max(24px,env(safe-area-inset-bottom))}
+  .page-heading>.button{font-size:12px;min-height:46px;padding:11px 13px}
+  .page-heading p,.modal-description,.field-help,.note-help{font-size:12px;line-height:1.7}
+  .date-rail{grid-template-columns:minmax(320px,1.3fr) minmax(0,1fr);gap:0 18px}
+  .month-panel{padding:14px 4px}
+  .month-title{padding:0 8px;margin-bottom:12px}
+  .month-title h2{font-size:15px}
+  .big-calendar{gap:3px 1px}
+  .big-weekday{font-size:11px}
+  .calendar-help{font-size:11px;margin-top:12px}
+  .media-library{scroll-margin-top:12px}
+  .media-toolbar,.member-filters{flex-wrap:wrap}
+  .media-toolbar>.search,.member-filters>.search{flex:1 1 100%;max-width:none}
+  .status-filter{width:100%;padding-left:12px}
+  .status-filter select{width:100%;max-width:none;flex:1;padding-right:30px}
+  .member-filters>select{width:100%}
+  .media-card-footer{gap:8px}
+  .media-download{padding:0 8px;margin-right:-8px;font-size:12px}
+  .media-creator{flex:1;overflow:hidden;overflow-wrap:anywhere}
+  .inline-controls{gap:6px;padding:5px 8px}
+  .inline-controls>span{font-size:11px;min-width:32px}
+  .library-view-tabs button{min-height:48px}
+  .range-inputs{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}
+  .range-inputs input{width:100%;padding:10px 6px;max-width:100%}
+  .export-button{font-size:12px}
+  .activity-panel>.section-heading{flex-wrap:wrap}
+  .activity-panel .section-heading select{width:100%;margin-top:0}
+  .activity-content{min-width:0;flex:1}
+  .activity-content p,.activity-content small,.activity-clip{overflow-wrap:anywhere}
+  .activity-row time{width:100%;margin-left:46px}
+  .modal{width:calc(100% - 16px);border-radius:14px;scroll-padding:20px}
+  .modal-inner{padding:20px}
+  .modal-heading{gap:8px}
+  .modal-heading h2{font-size:24px}
+  .modal-description{margin-bottom:20px}
+  .dropzone{padding:20px 14px}
+  .dropzone .upload-icon{width:42px;height:42px;margin-bottom:5px}
+  .dropzone span,.dropzone small{font-size:12px;line-height:1.5}
+  .role-choice>label{width:100%}
+  .account-identity{flex-wrap:wrap}
+  .account-identity>div{min-width:0;overflow-wrap:anywhere}
+  .review-side{padding:20px}
+  .review-author{flex-wrap:wrap}
+  .review-author>div{min-width:0;overflow-wrap:anywhere}
+  .preview-player{min-height:180px;height:38dvh}
+  .toast{bottom:max(16px,env(safe-area-inset-bottom));line-height:1.6}
+}
+@media(max-width:600px){
+  .date-rail{display:block}
+  .rail-section{display:none}
+  .studio-header .brand{font-size:27px}
+  .studio-header nav>button{flex-direction:column;gap:5px;font-size:11px;padding:10px 3px;min-height:56px}
+  .account-trigger>span:nth-child(2){display:none}
+  .account-trigger>svg{display:none}
+  .page-heading{flex-wrap:wrap;align-items:flex-start;gap:16px;margin:24px 0}
+  .page-heading>div{flex:1 1 190px}
+  .page-heading h1{font-size:32px;max-width:none}
+  .page-heading p{max-width:none}
+  .page-heading>.button{margin-top:0}
+  .workspace-context>span:last-child{display:none}
+  .gallery-footer{font-size:10px;flex-wrap:wrap}
+  .team-page>.members-panel{grid-row:1}
+  .team-page>.role-overview{grid-row:2}
+  .members-panel .table-scroll{overflow:visible}
+  .members-panel table,.members-panel tbody{display:block;width:100%}
+  .members-panel thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  .members-panel tbody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 10px;padding:18px;border-top:1px solid var(--line)}
+  .members-panel td{display:block;padding:0;border:0;min-width:0;align-self:center}
+  .members-panel td:first-child{grid-column:1;grid-row:1}
+  .members-panel td:nth-child(2){grid-column:1;grid-row:2}
+  .members-panel td:nth-child(3){grid-column:2;grid-row:2;text-align:right}
+  .members-panel td:nth-child(4){grid-column:1/-1;grid-row:3;display:flex;align-items:center;gap:7px;font-size:13px}
+  .members-panel td:nth-child(4)::before{content:'Clips added';font-family:'Geist Variable',sans-serif;font-size:12px;color:var(--muted)}
+  .members-panel td:last-child{grid-column:2;grid-row:1;justify-self:end}
+  .members-panel .table-person{gap:8px;min-width:0}
+  .members-panel .table-person>span:last-child{min-width:0}
+  .members-panel .table-person strong,.members-panel .table-person small{overflow-wrap:anywhere;white-space:normal}
+  .members-panel .table-person strong{font-size:14px}
+  .members-panel .table-person small{font-size:11px;line-height:1.5}
+  .members-panel .role-badge{white-space:normal;font-size:11px}
+  .members-panel .protected-label{font-size:10px;gap:4px}
+  .members-panel .manage-button{font-size:12px;padding:10px}
+  .login-story{padding:24px max(24px,env(safe-area-inset-right)) 24px max(24px,env(safe-area-inset-left));gap:24px}
+  .login-story h1{font-size:48px;margin-bottom:14px}
+  .login-story-content>p{font-size:13px;max-width:100%}
+  .login-kicker{margin-bottom:12px}
+  .login-panel{padding:28px 24px max(28px,env(safe-area-inset-bottom))}
+}
+@media(max-height:540px) and (pointer:coarse){
+  .modal{margin:8px auto;max-height:calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
+  .modal-inner{padding:16px}
+  .preview-player{height:65dvh;min-height:150px}
+}

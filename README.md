@@ -63,6 +63,8 @@ Deleting a clipper removes the account from the directory and revokes sign-in an
 - Stats are grouped by the **assigned calendar date**, not the actual upload timestamp. Activity retains the real timestamp. Approval/posted counts describe **current status**, not historical status at the end of a period. Posting is a manual status; it does not publish to social media.
 - No social views, playback events, or download counters are tracked.
 
+Phone layouts use larger touch controls, readable form fields, stacked filters, and member cards with account actions visible. Upload forms stay open while editing, selecting text, or tapping the background; use the close button or Escape to dismiss. Closing also cancels upload startup on slow connections.
+
 ## Uploads and persistence
 
 MP4, MOV, M4V, and WebM are accepted, up to 2 GB per clip. Uploaded bytes and the original filename are preserved. Browser codec support varies, particularly for MOV/HEVC: unsupported previews can still be downloaded unchanged. This version does not generate compatible preview transcodes.
